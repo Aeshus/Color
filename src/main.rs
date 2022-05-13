@@ -1,15 +1,11 @@
-use std::env;
+use std::env::args;
 
 use crate::cli::Cli;
 
-//use crate::parser::Png;
-
 mod cli;
-mod error;
-mod parser;
 
 fn main() {
-    let cli = Cli::from(env::args());
+    let cli = Cli::from(args());
 
     println!("{:?}", cli)
 }
