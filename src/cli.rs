@@ -54,22 +54,23 @@ impl From<std::env::Args> for Cli {
                             'd' => {
                                 if cli.display_options.descriptive == None {
                                     cli.display_options.descriptive = Some(true);
-                                } else {
-                                    println!(
+                                    continue;
+                                }
+
+                                println!(
                                         "Don't assign multiple discription options. Ignoring {} option.",
                                         chars
                                     );
-                                }
                             }
                             'c' => {
                                 if cli.display_options.color == None {
                                     cli.display_options.color = Some(true);
-                                } else {
-                                    println!(
-                                        "Don't assign multiple color options. Ignoring {} option.",
-                                        chars
-                                    );
+                                    continue;
                                 }
+                                println!(
+                                    "Don't assign multiple color options. Ignoring {} option.",
+                                    chars
+                                );
                             }
                             _ => {
                                 println!("Unknown short flag: '{}'", chars);
@@ -141,70 +142,3 @@ impl From<std::env::Args> for Cli {
         cli
     }
 }
-
-// impl Cli {
-//     pub fn from_vec(input: Vec<String>) -> Cli {
-//         let mut output: Option<Output> = None;
-//         let mut path: Option<PathBuf> = None;
-
-//         for (index, argument) in input.iter().enumerate().skip(1) {
-//             // Clone's v & turns into string.
-//             // Done to allow parts of the string to be removed over time.
-//             // Also makes sure that the final output is still fine.
-//             let mut string = argument.to_string();
-
-//             println!("{}", argument);
-
-//             if string.chars().nth(0).unwrap() == '-' {
-//                 match output {
-//                     Some(..) => {
-//                         println!(
-//                             "WARNING: Do not input multiple output methods!
-//                             Skipping {}; Using {:?}",
-//                             string, output
-//                         );
-//                         break;
-//                     }
-//                     _ => (),
-//                 }
-
-//                 // Remove preceeding dashes to make patern maching easier
-//                 string.remove(0);
-//                 if string.chars().nth(0).unwrap() == '-' {
-//                     string.remove(0);
-//                 }
-
-//                 match string.as_str() {
-//                     "d" | "descriptive" => {
-//                         output = Some(Output::Descriptive);
-//                     }
-//                     "n" | "normal" | _ => {
-//                         output = Some(Output::Normal);
-//                     }
-//                     _ => {}
-//                 }
-//             } else {
-//                 // Sanity check
-//                 // Makes sure there aren't multiple paths inputted
-//                 match path {
-//                     Some(..) => {
-//                         println!(
-//                             "WARNING: Do not input multiple paths!
-//                             Skipping {}; Using {:?}",
-//                             argument, path
-//                         );
-//                         break;
-//                     }
-//                     _ => (),
-//                 }
-
-//                 // Checks to make sure the path exists.
-//                 if Path::new(&input[index]).exists() {
-//                     path = Some(PathBuf::from(v));
-//                 }
-//             }
-//         }
-
-//         return Cli { path, output };
-//     }
-// }
