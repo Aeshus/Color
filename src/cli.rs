@@ -9,10 +9,13 @@ pub struct Cli {
 
 #[derive(Debug)]
 pub struct DisplayOptions {
+    // If description should be added to the stdout messages.
     descriptive: Option<bool>,
+    // If the stdout messages should contain color.
     color: Option<bool>,
 }
 
+// Takes an Args object and returns a CLI
 impl From<std::env::Args> for Cli {
     fn from(args: std::env::Args) -> Self {
         // Skip first one, as that's always the command name.
@@ -27,8 +30,6 @@ impl From<std::env::Args> for Cli {
 
         // Iterate over the remaining env variables
         for mut argument in args.skip(1) {
-            // We're able to use unwrap here because the iterator won't
-            // read past it's bounds.
             if argument.chars().nth(0).unwrap() == '-' {
                 let mut dash_num = 0;
 
@@ -44,7 +45,7 @@ impl From<std::env::Args> for Cli {
 
                 // Sanity Check
                 if dash_num == 0 {
-                    panic!()
+                    panic!();
                 }
 
                 // Short-Hand
