@@ -1,19 +1,17 @@
-// use std::fs::File;
-// use std::io::Read;
+use std::fs::File;
+use std::io::Read;
+use std::path::PathBuf;
 
-// use crate::cli::Cli;
-// use crate::cli::Output;
-
-// pub struct Png;
+use crate::cli::Cli;
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
-struct Png {
+pub struct Png {
     metadata: Vec<u8>,
     chunks: Vec<Chunks>,
 }
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html#Chunk-layout
-struct Chuncks {
+struct Chunks {
     chunk_type: ChunkType,
     chunk_length: u32,
     data: Vec<u8>,
@@ -49,12 +47,47 @@ enum ChunkType {
 
 impl From<Cli> for Png {
     // Iterate over the whole file, emmiting PNG at end.
-    todo!();
+    fn from(cli: Cli) -> Png {
+        let path = match cli.file_path {
+            Some(file_path) => file_path,
+            None => {
+                panic!("Error, can't read path from CLI \n {}", line!());
+            }
+        };
+
+        let mut file = match File::open(path) {
+            Ok(x) => x,
+            Err(..) => {
+                panic!("Error, can't read file \n {}", line!());
+            }
+        };
+
+        let mut png_metadata: [u8; 8] = [0; 8];
+        match file.read_exact(&mut png_metadata) {
+            Ok(x) => x,
+            Err(..) => {
+                panic!("Error, can't read metadata of file \n {}", line!())
+            }
+        }
+
+        if !(png_metadata == [137, 80, 78, 71, 13, 10, 26, 10]) {
+            panic!("Error, the PNG File Signature is incorrect \n {}", line!())
+        }
+
+        let mut chunk_type: [u8; 4] = [0; 4];
+        let mut chunk_length: [u8; 4] = [0; 4];
+        let mut chunk_data: Vec<u8> = Vec::new();
+        let mut chunk_crr: [u8; 4] = [0; 4];
+
+        todo!();
+    }
 }
 
 impl From<[u8; 4]> for ChunkType {
     // Identify & Parse the chunktype
-    todo!();
+    fn from(chunk_identifier: [u8; 4]) -> ChunkType {
+        todo!();
+    }
 }
 
 // impl Png {
