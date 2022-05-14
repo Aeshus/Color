@@ -6,6 +6,57 @@
 
 // pub struct Png;
 
+// http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
+struct Png {
+    metadata: Vec<u8>,
+    chunks: Vec<Chunks>,
+}
+
+// http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html#Chunk-layout
+struct Chuncks {
+    chunk_type: ChunkType,
+    chunk_length: u32,
+    data: Vec<u8>,
+    crc: u8,
+}
+
+// Chunk Types
+// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html
+// Used to tell the parser what the data is used for.
+enum ChunkType {
+    IHDR,
+    PLTE,
+    IDAT,
+    IEND,
+
+    tRNS,
+    gAMA,
+    cHRM,
+    sRGB,
+    iCCP,
+
+    tEXt,
+    zTXt,
+    iTXt,
+
+    bKGD,
+    pHYs,
+    sBIT,
+    sPLT,
+    hIST,
+    tIME,
+}
+
+impl From<Cli> for Png {
+    // Iterate over the whole file, emmiting PNG at end.
+    todo!();
+}
+
+impl From<[u8; 4]> for ChunkType {
+    // Identify & Parse the chunktype
+    todo!();
+}
+
 // impl Png {
 //     pub fn from_cli(input: Cli) -> () {
 //         let path = match input.path {

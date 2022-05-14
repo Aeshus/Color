@@ -18,8 +18,6 @@ pub struct DisplayOptions {
 // Takes an Args object and returns a CLI
 impl From<std::env::Args> for Cli {
     fn from(args: std::env::Args) -> Self {
-        // Skip first one, as that's always the command name.
-
         let mut cli = Cli {
             file_path: None,
             display_options: DisplayOptions {
@@ -34,21 +32,19 @@ impl From<std::env::Args> for Cli {
                 let mut dash_num = 0;
 
                 for dash_char in argument.chars() {
-                    if dash_char == '-' {
-                        dash_num += 1;
+                    if !(dash_char == '-') {
+                        break;
                     }
+                    dash_num += 1;
                 }
 
                 for _ in 0..dash_num {
                     argument.remove(0);
                 }
 
-                // Sanity Check
-                if dash_num == 0 {
-                    panic!();
-                }
-
-                // Short-Hand
+                // Short Option Style
+                // https://www.gnu.org/software/tar/manual/html_node/Short-Options.html
+                // Allows you to concatonate multiple single-letter options together
                 if dash_num == 1 {
                     for chars in argument.chars() {
                         match chars {
@@ -59,9 +55,9 @@ impl From<std::env::Args> for Cli {
                                 }
 
                                 println!(
-                                        "Don't assign multiple discription options. Ignoring {} option.",
-                                        chars
-                                    );
+                                    "Don't assign multiple discription options. Ignoring '{}'.",
+                                    chars
+                                );
                             }
                             'c' => {
                                 if cli.display_options.color == None {
@@ -69,7 +65,7 @@ impl From<std::env::Args> for Cli {
                                     continue;
                                 }
                                 println!(
-                                    "Don't assign multiple color options. Ignoring {} option.",
+                                    "Don't assign multiple color options. Ignoring '{}'.",
                                     chars
                                 );
                             }
@@ -80,7 +76,9 @@ impl From<std::env::Args> for Cli {
                     }
                 }
 
-                // Long-Hand
+                // Long Option Style
+                // https://www.gnu.org/software/tar/manual/html_node/Long-Options.html
+                // It's a more human readable but bigger option method.
                 if dash_num >= 2 {
                     match argument.as_str() {
                         "description" | "descriptive" => {
@@ -112,6 +110,7 @@ impl From<std::env::Args> for Cli {
                 continue;
             }
 
+            // If there's no dashes, assume it's meant to be the path
             if cli.file_path != None {
                 println!("Don't assign multiple paths. Ignoring '{}'", argument);
                 continue;
@@ -132,6 +131,7 @@ impl From<std::env::Args> for Cli {
             cli.file_path = Some(PathBuf::from(argument));
         }
 
+        // Default Values
         if cli.display_options.descriptive == None {
             cli.display_options.descriptive = Some(false);
         }
