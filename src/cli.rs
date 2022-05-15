@@ -1,4 +1,5 @@
 use std::path::Path;
+
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -116,19 +117,25 @@ impl From<std::env::Args> for Cli {
                 continue;
             }
 
-            let temp_path = Path::new(&argument);
-
-            if !(temp_path.exists()) {
-                println!("Path Supplied ({:?}) does not exist", temp_path);
-                continue;
+            if !(Path::new(&argument).exists()) {
+                panic!("Path supplied '{:?}' does not exist", &argument);
             }
 
-            if !(temp_path.extension().unwrap() == "png") {
-                println!("File supplied ({:?}) is not a PNG", temp_path);
-                continue;
+            // Resolves path (symlinks, etc) and turns it into a PathBuf
+            // Possible unaccounted for error: "A non-final component in path is not a directory.""
+            let path = match Path::new(&argument).canonicalize() {
+                Ok(x) => x,
+                Err(..) => {
+                    panic!("Error resolving the path supplied '{:?}'", &argument);
+                }
+            };
+
+            match verify_file_path(&path) {
+                Some(..) => (),
+                None => (),
             }
 
-            cli.file_path = Some(PathBuf::from(argument));
+            cli.file_path = Some(path);
         }
 
         // Default Values
@@ -142,4 +149,22 @@ impl From<std::env::Args> for Cli {
 
         cli
     }
+}
+
+fn verify_file_path(file_path: &PathBuf) -> Option<()> {
+    match file_path.extension() {
+        Some(x) => {
+            if !(x == "png") {
+                panic!("Path supplied '{:?}' is not a png", file_path);
+            }
+        }
+        None => {
+            panic!(
+                "Path supplied '{:?}' does not have a file extension",
+                file_path
+            );
+        }
+    }
+
+    Some(())
 }
