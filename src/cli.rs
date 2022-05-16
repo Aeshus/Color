@@ -16,6 +16,42 @@ pub struct DisplayOptions {
     color: Option<bool>,
 }
 
+trait IsPng {
+    fn is_png(&self) -> bool;
+}
+
+impl IsPng for PathBuf {
+    fn is_png(&self) -> bool {
+        match &self.extension() {
+            Some(x) => {
+                if *x != "png" {
+                    return false;
+                }
+
+                true
+            }
+            None => false,
+        }
+    }
+}
+
+trait CountDashes {
+    fn count_dashes(&self) -> usize;
+}
+
+impl CountDashes for String {
+    fn count_dashes(&self) -> usize {
+        let mut dash_num = 0;
+        for char in self.chars() {
+            if char != '-' {
+                break;
+            }
+            dash_num += 1;
+        }
+        return dash_num;
+    }
+}
+
 // Takes an Args object and returns a CLI
 impl From<std::env::Args> for Cli {
     fn from(args: std::env::Args) -> Self {
@@ -30,14 +66,7 @@ impl From<std::env::Args> for Cli {
         // Iterate over the remaining env variables
         for mut argument in args.skip(1) {
             if argument.chars().nth(0).unwrap() == '-' {
-                let mut dash_num = 0;
-
-                for dash_char in argument.chars() {
-                    if !(dash_char == '-') {
-                        break;
-                    }
-                    dash_num += 1;
-                }
+                let dash_num = argument.count_dashes();
 
                 for _ in 0..dash_num {
                     argument.remove(0);
@@ -129,9 +158,8 @@ impl From<std::env::Args> for Cli {
                 }
             };
 
-            match verify_file_path(&path) {
-                Some(..) => (),
-                None => (),
+            if path.is_png() == false {
+                panic!("Path supplied '{:?}' is not a PNG", &argument);
             }
 
             cli.file_path = Some(path);
@@ -148,22 +176,4 @@ impl From<std::env::Args> for Cli {
 
         cli
     }
-}
-
-fn verify_file_path(file_path: &PathBuf) -> Option<()> {
-    match file_path.extension() {
-        Some(x) => {
-            if !(x == "png") {
-                panic!("Path supplied '{:?}' is not a png", file_path);
-            }
-        }
-        None => {
-            panic!(
-                "Path supplied '{:?}' does not have a file extension",
-                file_path
-            );
-        }
-    }
-
-    Some(())
 }
