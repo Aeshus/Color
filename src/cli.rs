@@ -50,25 +50,24 @@ impl From<std::env::Args> for Cli {
                     for chars in argument.chars() {
                         match chars {
                             'd' => {
-                                if cli.display_options.descriptive == None {
-                                    cli.display_options.descriptive = Some(true);
-                                    continue;
+                                if cli.display_options.descriptive.is_some() {
+                                    println!(
+                                        "Don't assign multiple discription options. Ignoring '{}'.",
+                                        chars
+                                    );
                                 }
 
-                                println!(
-                                    "Don't assign multiple discription options. Ignoring '{}'.",
-                                    chars
-                                );
+                                cli.display_options.descriptive = Some(true);
                             }
                             'c' => {
-                                if cli.display_options.color == None {
-                                    cli.display_options.color = Some(true);
-                                    continue;
+                                if cli.display_options.color.is_some() {
+                                    println!(
+                                        "Don't assign multiple color options. Ignoring '{}'.",
+                                        chars
+                                    );
                                 }
-                                println!(
-                                    "Don't assign multiple color options. Ignoring '{}'.",
-                                    chars
-                                );
+
+                                cli.display_options.color = Some(true);
                             }
                             _ => {
                                 println!("Unknown short flag: '{}'", chars);
@@ -83,24 +82,22 @@ impl From<std::env::Args> for Cli {
                 if dash_num >= 2 {
                     match argument.as_str() {
                         "description" | "descriptive" => {
-                            if cli.display_options.descriptive == None {
-                                cli.display_options.descriptive = Some(true);
-                                continue;
+                            if cli.display_options.descriptive.is_some() {
+                                println!(
+                                    "Don't assign multiple description options. Ignoring {} option.",
+                                    argument
+                                );
                             }
-                            println!(
-                                "Don't assign multiple description options. Ignoring {} option.",
-                                argument
-                            );
+                            cli.display_options.descriptive = Some(true);
                         }
                         "color" | "colorful" => {
-                            if cli.display_options.color == None {
-                                cli.display_options.color = Some(true);
-                                continue;
+                            if cli.display_options.color.is_some() {
+                                println!(
+                                    "Don't assign multiple color options. Ignoring {} option.",
+                                    argument
+                                );
                             }
-                            println!(
-                                "Don't assign multiple color options. Ignoring {} option.",
-                                argument
-                            );
+                            cli.display_options.color = Some(true);
                         }
                         _ => {
                             println!("Unknown long flag: '{}'", argument)
@@ -108,6 +105,8 @@ impl From<std::env::Args> for Cli {
                     }
                 }
 
+                // Skip through rest of the code
+                // The path coce could end up running if we don't skip now -- as the program modifies the argument string to make it not have dashes.
                 continue;
             }
 
