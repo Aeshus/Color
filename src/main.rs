@@ -10,4 +10,6 @@ fn main() {
     let cli = Cli::from(args());
 
     let png = Png::from(cli);
+
+    println!("{:?}", png);
 }

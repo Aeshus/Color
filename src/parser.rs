@@ -5,22 +5,26 @@ use std::path::PathBuf;
 use crate::cli::Cli;
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
+#[derive(Debug)]
 pub struct Png {
-    metadata: Vec<u8>,
-    chunks: Vec<Chunks>,
+    metadata: [u8; 8],
+    chunks: Vec<Chunk>,
 }
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html#Chunk-layout
-struct Chunks {
+#[derive(Debug)]
+struct Chunk {
     chunk_type: ChunkType,
-    chunk_length: u32,
-    data: Vec<u8>,
-    crc: u8,
+    chunk_length: usize,
+    chunk_data: Vec<u8>,
+    chunk_crc: [u8; 4],
 }
 
 // Chunk Types
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html
 // Used to tell the parser what the data is used for.
+#[allow(non_camel_case_types)]
+#[derive(Debug)]
 enum ChunkType {
     IHDR,
     PLTE,
@@ -51,14 +55,14 @@ impl From<Cli> for Png {
         let path = match cli.file_path {
             Some(file_path) => file_path,
             None => {
-                panic!("Error, can't read path from CLI \n {}", line!());
+                panic!("Error, can't read path from CLI");
             }
         };
 
         let mut file = match File::open(path) {
             Ok(x) => x,
             Err(..) => {
-                panic!("Error, can't read file \n {}", line!());
+                panic!("Error, can't read file");
             }
         };
 
@@ -66,27 +70,90 @@ impl From<Cli> for Png {
         match file.read_exact(&mut png_metadata) {
             Ok(x) => x,
             Err(..) => {
-                panic!("Error, can't read metadata of file \n {}", line!())
+                panic!("Error, PNG signature not found")
             }
         }
 
         if !(png_metadata == [137, 80, 78, 71, 13, 10, 26, 10]) {
-            panic!("Error, the PNG File Signature is incorrect \n {}", line!())
+            panic!("Error, the PNG File Signature is incorrect")
         }
+
+        println!("{:?}", png_metadata);
+
+        let mut png = Png {
+            metadata: png_metadata,
+            chunks: Vec::new(),
+        };
 
         let mut chunk_type: [u8; 4] = [0; 4];
         let mut chunk_length: [u8; 4] = [0; 4];
-        let mut chunk_data: Vec<u8> = Vec::new();
-        let mut chunk_crr: [u8; 4] = [0; 4];
+        // let mut chunk_data: Vec<u8> = Vec::new(); - Length created at run-time, so we put it in the loop
+        let mut chunk_crc: [u8; 4] = [0; 4];
 
-        todo!();
+        // TODO: Better Error Management
+        loop {
+            match file.read_exact(&mut chunk_length) {
+                Err(..) => (),
+                _ => (),
+            }
+
+            // PNG Uses Big-Edian
+            // https://www.w3.org/TR/2003/REC-PNG-20031110/#7Integers-and-byte-order
+            let chunk_length_usize = u32::from_be_bytes(chunk_length).try_into().unwrap();
+
+            match file.read_exact(&mut chunk_type) {
+                Err(..) => break,
+                _ => (),
+            }
+            let mut chunk_data = vec![0; chunk_length_usize];
+
+            match file.read_exact(&mut chunk_data) {
+                Err(..) => (),
+                _ => (),
+            }
+
+            match file.read_exact(&mut chunk_crc) {
+                Err(..) => (),
+                _ => (),
+            }
+
+            png.chunks.push(Chunk {
+                chunk_type: ChunkType::from(chunk_type),
+                chunk_length: chunk_length_usize,
+                chunk_data,
+                chunk_crc,
+            });
+        }
+
+        return png;
     }
 }
 
 impl From<[u8; 4]> for ChunkType {
     // Identify & Parse the chunktype
     fn from(chunk_identifier: [u8; 4]) -> ChunkType {
-        todo!();
+        match chunk_identifier {
+            [73, 69, 78, 68] => ChunkType::IEND,
+            [73, 68, 65, 84] => ChunkType::IDAT,
+            [73, 72, 68, 82] => ChunkType::IHDR,
+            [80, 76, 84, 69] => ChunkType::PLTE,
+
+            [116, 82, 78, 83] => ChunkType::tRNS,
+            [103, 65, 77, 65] => ChunkType::gAMA,
+            [99, 72, 82, 77] => ChunkType::cHRM,
+            [115, 82, 71, 66] => ChunkType::sRGB,
+            [98, 75, 71, 68] => ChunkType::bKGD,
+            [112, 72, 89, 115] => ChunkType::pHYs,
+            [115, 66, 73, 84] => ChunkType::sBIT,
+            [115, 80, 76, 84] => ChunkType::sPLT,
+            [104, 73, 83, 84] => ChunkType::hIST,
+            [116, 73, 77, 69] => ChunkType::tIME,
+
+            _ => {
+                println!("Unkown Chunk Type");
+                ChunkType::tIME
+            }
+        }
     }
 }
 
@@ -563,22 +630,22 @@ impl From<[u8; 4]> for ChunkType {
 // impl ChunkTypes {
 //     pub fn from_bytes(input: [u8; 4]) -> ChunkTypes {
 //         match input {
-//             [73, 69, 78, 68] => ChunkTypes::IEND,
-//             [73, 68, 65, 84] => ChunkTypes::IDAT,
-//             [73, 72, 68, 82] => ChunkTypes::IHDR,
-//             [80, 76, 84, 69] => ChunkTypes::PLTE,
+// [73, 69, 78, 68] => ChunkTypes::IEND,
+// [73, 68, 65, 84] => ChunkTypes::IDAT,
+// [73, 72, 68, 82] => ChunkTypes::IHDR,
+// [80, 76, 84, 69] => ChunkTypes::PLTE,
 
-//             [116, 82, 78, 83] => ChunkTypes::tRNS,
-//             [103, 65, 77, 65] => ChunkTypes::gAMA,
-//             [99, 72, 82, 77] => ChunkTypes::cHRM,
-//             [115, 82, 71, 66] => ChunkTypes::sRGB,
-//             [98, 75, 71, 68] => ChunkTypes::bKGD,
-//             [112, 72, 89, 115] => ChunkTypes::pHYs,
-//             [115, 66, 73, 84] => ChunkTypes::sBIT,
-//             [115, 80, 76, 84] => ChunkTypes::sPLT,
-//             [104, 73, 83, 84] => ChunkTypes::hIST,
-//             [116, 73, 77, 69] => ChunkTypes::tIME,
-//             _ => ChunkTypes::Other,
+// [116, 82, 78, 83] => ChunkTypes::tRNS,
+// [103, 65, 77, 65] => ChunkTypes::gAMA,
+// [99, 72, 82, 77] => ChunkTypes::cHRM,
+// [115, 82, 71, 66] => ChunkTypes::sRGB,
+// [98, 75, 71, 68] => ChunkTypes::bKGD,
+// [112, 72, 89, 115] => ChunkTypes::pHYs,
+// [115, 66, 73, 84] => ChunkTypes::sBIT,
+// [115, 80, 76, 84] => ChunkTypes::sPLT,
+// [104, 73, 83, 84] => ChunkTypes::hIST,
+// [116, 73, 77, 69] => ChunkTypes::tIME,
+// _ => ChunkTypes::Other,
 //         }
 //     }
 // }
