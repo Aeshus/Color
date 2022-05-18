@@ -1,3 +1,5 @@
+// TODO: Might make sense to make structs for each chunk type, allowing for me to more easily share & display the data when parsing
+
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -5,6 +7,7 @@ use std::path::PathBuf;
 use crate::cli::Cli;
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
+// https://www.w3.org/TR/2003/REC-PNG-20031110/#11Chunks
 #[derive(Debug)]
 pub struct Png {
     metadata: [u8; 8],
@@ -20,33 +23,207 @@ struct Chunk {
     chunk_crc: [u8; 4],
 }
 
+// Gonna be a disgusting mess imo
+impl std::fmt::Display for Png {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        // What to parse before hand: We must know what the colordata in the IHDR chunk is to allow us to understand what the IDAT Chunk actually holds as data.
+        // Otherwise, we don't know if it's gresycale, alpha, 3 channel, etc.
+        // Also tells us if it's pallet or not, so we don't need to go looking beforehand.
+
+        for chunk in &self.chunks {
+            // mockup
+            todo!();
+            chunk.chunk_type.parse();
+        }
+
+        todo!();
+    }
+}
+
+trait Parse {
+    fn parse(chunk: Chunk) -> Self;
+}
+
+// struct IHDR {
+//     width: u32,
+//     height: u32,
+//     bit_depth: u8,
+//     color_type: u8,
+//     compression_method: u8,
+//     filter_method: u8,
+//     interlace_method: u8,
+// }
+
+// struct PLTE {
+//     // R,G,B
+//     pallet: Vec<(u8, u8, u8)>,
+// }
+
+// struct IDAT {
+//     // Depends
+// }
+
+// // No Data
+// struct IEND {}
+
+// struct tRNS {
+//     //Color type 0:
+//     grey_sample_value: u16,
+
+//     // Type 2:
+//     red_sample_value: u16,
+//     blue_sample_value: u16,
+//     green_sample_value: u16,
+
+//     // Type 3
+//     pallet: Vec<u8>, // Type 4 & 6 are ignored as alpha is saved in IDAT
+// }
+
+// struct cHRM {
+//     white_x: u32,
+//     white_y: u32,
+
+//     red_x: u32,
+//     red_y: u32,
+
+//     green_x: u32,
+//     green_y: u32,
+
+//     blue_x: u32,
+//     blue_y: u32,
+// }
+
+// struct gAMA {
+//     image_gama: u32,
+// }
+
+// struct iCCP {
+//     profile_name: String, // Bytes 1-79
+
+//     //null_separator: u8,
+//     compression_method: u8,
+//     compressed_profile: Vec<u8>,
+// }
+
+// struct sBIT {
+//     // Type 0
+//     significant_greyscale_bit: u8,
+
+//     // Type 2 & 3
+//     significant_red_bits: u8,
+//     significant_green_bits: u8,
+//     significant_blue_bits: u8,
+
+//     significant_greyscale_bits: u8,
+//     significant_alpha_bits: u8,
+
+//     significant_red_bits: u8,
+//     significant_green_bits: u8,
+//     significant_blue_bits: u8,
+//     significant_alpha_bits: u8,
+// }
+
+// struct sRGB {
+//     rendering_intent: u8,
+// }
+
+// struct tEXt {
+//     keyword: String, // First 1-79 bytes
+//     // null_seperator: u8
+//     text_string: String,
+// }
+
+// struct zTXt {
+//     keyword: String, // First 1-79 bytes
+//     // null_seperator: u8,
+//     compression_method: u8,
+//     compressed_text_datastream: Vec<u8>,
+// }
+
+// struct iTXt {
+//     keyword: String, // First 1-79 bytes
+//     // null_seperator: u8,
+//     compression_flag: u8,
+//     compression_method: u8,
+//     language_tag: String,
+//     // null_seperator: u8,
+//     translated_keyword: String, // ?String?
+//     // null_seperator
+//     text: String,
+// }
+
+// struct bKGD {
+//     // Type 0
+//     greyscale: u16,
+//     // Type 2 & 6
+//     red: u16,
+//     green: u16,
+//     blue: u16,
+//     // Type 3
+//     palette_index: u8,
+// }
+
+// struct hIST {
+//     histogram: Vec<u16>,
+// }
+
+// struct pHYs {
+//     pixels_per_x: u32,
+//     pixels_per_y: u32,
+//     unit_specifier: u8,
+// }
+
+// struct sPLT {
+//     palette_name: String, // First 1-79 bytes
+//     // null_seperator: u8,
+//     sample_depth: u8,
+//     red: u8, // Can be 16?
+//     green: u8,
+//     blue: u8,
+//     alpha: u8,
+//     frequency: u8,
+// }
+
+// struct tIME {
+//     year: u16,
+//     month: u8,
+//     day: u8,
+//     hour: u8,
+//     minute: u8,
+//     second: u8,
+// }
+
 // Chunk Types
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html
 // Used to tell the parser what the data is used for.
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 enum ChunkType {
-    IHDR,
-    PLTE,
-    IDAT,
-    IEND,
+    // Critical chunks
+    // https://www.w3.org/TR/2003/REC-PNG-20031110/#11Critical-chunks
+    IHDR, // 73, 72, 68, 62
+    PLTE, // 89, 76, 84, 69
+    IDAT, // 73, 68, 65, 84
+    IEND, // 73, 69, 78, 68
 
-    tRNS,
-    gAMA,
-    cHRM,
-    sRGB,
-    iCCP,
+    // Ancillary chunks
+    // https://www.w3.org/TR/2003/REC-PNG-20031110/#11Ancillary-chunks
+    tRNS, // 116, 82, 78, 83
+    gAMA, // 103, 65, 77, 65
+    cHRM, // 99, 72, 82, 77
+    sRGB, // 115, 82, 71, 66
+    iCCP, // 105, 67, 67, 80
 
-    tEXt,
-    zTXt,
-    iTXt,
+    tEXt, // 116, 69, 88, 116
+    zTXt, // 122, 84, 88, 116
+    iTXt, // 105, 84, 88, 116
 
-    bKGD,
-    pHYs,
-    sBIT,
-    sPLT,
-    hIST,
-    tIME,
+    bKGD, // 98, 75, 71, 68
+    pHYs, // 112, 72, 89, 115
+    sBIT, // 115, 66, 73, 84
+    sPLT, // 115, 80, 76, 84
+    hIST, // 104, 73, 83, 84
+    tIME, // 116, 73, 77, 69
 }
 
 impl From<Cli> for Png {
@@ -133,15 +310,21 @@ impl From<[u8; 4]> for ChunkType {
     // Identify & Parse the chunktype
     fn from(chunk_identifier: [u8; 4]) -> ChunkType {
         match chunk_identifier {
-            [73, 69, 78, 68] => ChunkType::IEND,
+            [73, 72, 68, 62] => ChunkType::IHDR,
+            [89, 76, 84, 69] => ChunkType::PLTE,
             [73, 68, 65, 84] => ChunkType::IDAT,
-            [73, 72, 68, 82] => ChunkType::IHDR,
-            [80, 76, 84, 69] => ChunkType::PLTE,
+            [73, 69, 78, 68] => ChunkType::IEND,
 
             [116, 82, 78, 83] => ChunkType::tRNS,
             [103, 65, 77, 65] => ChunkType::gAMA,
             [99, 72, 82, 77] => ChunkType::cHRM,
             [115, 82, 71, 66] => ChunkType::sRGB,
+            [105, 67, 67, 80] => ChunkType::iCCP,
+
+            [116, 69, 88, 116] => ChunkType::tEXt,
+            [122, 84, 88, 116] => ChunkType::zTXt,
+            [105, 84, 88, 116] => ChunkType::iTXt,
+
             [98, 75, 71, 68] => ChunkType::bKGD,
             [112, 72, 89, 115] => ChunkType::pHYs,
             [115, 66, 73, 84] => ChunkType::sBIT,
