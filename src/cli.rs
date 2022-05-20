@@ -11,9 +11,7 @@ pub struct Cli {
 #[derive(Debug)]
 pub struct DisplayOptions {
     // If description should be added to the stdout messages.
-    descriptive: Option<bool>,
-    // If the stdout messages should contain color.
-    color: Option<bool>,
+    pub descriptive: Option<bool>,
 }
 
 trait IsPng {
@@ -57,10 +55,7 @@ impl From<std::env::Args> for Cli {
     fn from(args: std::env::Args) -> Self {
         let mut cli = Cli {
             file_path: None,
-            display_options: DisplayOptions {
-                descriptive: None,
-                color: None,
-            },
+            display_options: DisplayOptions { descriptive: None },
         };
 
         // Iterate over the remaining env variables
@@ -88,16 +83,6 @@ impl From<std::env::Args> for Cli {
 
                                 cli.display_options.descriptive = Some(true);
                             }
-                            'c' => {
-                                if cli.display_options.color.is_some() {
-                                    println!(
-                                        "Don't assign multiple color options. Ignoring '{}'.",
-                                        chars
-                                    );
-                                }
-
-                                cli.display_options.color = Some(true);
-                            }
                             _ => {
                                 println!("Unknown short flag: '{}'", chars);
                             }
@@ -118,15 +103,6 @@ impl From<std::env::Args> for Cli {
                                 );
                             }
                             cli.display_options.descriptive = Some(true);
-                        }
-                        "color" | "colorful" => {
-                            if cli.display_options.color.is_some() {
-                                println!(
-                                    "Don't assign multiple color options. Ignoring {} option.",
-                                    argument
-                                );
-                            }
-                            cli.display_options.color = Some(true);
                         }
                         _ => {
                             println!("Unknown long flag: '{}'", argument)
@@ -168,10 +144,6 @@ impl From<std::env::Args> for Cli {
         // Default Values
         if cli.display_options.descriptive == None {
             cli.display_options.descriptive = Some(false);
-        }
-
-        if cli.display_options.color == None {
-            cli.display_options.color = Some(false);
         }
 
         cli

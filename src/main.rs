@@ -11,5 +11,5 @@ fn main() {
 
     let png = Png::from(cli);
 
-    println!("{:?}", png);
+    println!("{}", png);
 }

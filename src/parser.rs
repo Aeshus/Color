@@ -2,7 +2,6 @@
 
 use std::fs::File;
 use std::io::Read;
-use std::path::PathBuf;
 
 use crate::cli::Cli;
 
@@ -12,6 +11,7 @@ use crate::cli::Cli;
 pub struct Png {
     metadata: [u8; 8],
     chunks: Vec<Chunk>,
+    cli: Cli,
 }
 
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html#Chunk-layout
@@ -25,18 +25,61 @@ struct Chunk {
 
 // Gonna be a disgusting mess imo
 impl std::fmt::Display for Png {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         // What to parse before hand: We must know what the colordata in the IHDR chunk is to allow us to understand what the IDAT Chunk actually holds as data.
         // Otherwise, we don't know if it's gresycale, alpha, 3 channel, etc.
         // Also tells us if it's pallet or not, so we don't need to go looking beforehand.
 
-        for chunk in &self.chunks {
-            // mockup
-            todo!();
-            chunk.chunk_type.parse();
-        }
+        let mut color_type: [u8; 1] = [0; 1];
+        let mut bit_depth: [u8; 1] = [0; 1];
 
-        todo!();
+        for chunk in &self.chunks {
+            println!("{:?}", chunk);
+            match chunk.chunk_type {
+                ChunkType::IHDR => {
+                    println!("IHDR");
+                    let mut width: [u8; 4] = [0; 4];
+                    let mut height: [u8; 4] = [0; 4];
+                    let mut compression_method: [u8; 1] = [0; 1];
+                    let mut filter_method: [u8; 1] = [0; 1];
+                    let mut interlace_method: [u8; 1] = [0; 1];
+
+                    chunk.chunk_data.as_slice().read_exact(&mut width).unwrap();
+                    chunk.chunk_data.as_slice().read_exact(&mut height).unwrap();
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut bit_depth)
+                        .unwrap();
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut color_type)
+                        .unwrap();
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut compression_method)
+                        .unwrap();
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut filter_method)
+                        .unwrap();
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut interlace_method)
+                        .unwrap();
+
+                    if self.cli.display_options.descriptive == Some(true) {
+                        write!(f, "IHDR Chunk:\n width: {:?}\n height: {:?}\n compression method: {:?}\n filter_method {:?}\n interlace method: {:?}\n", &width, &height, &compression_method, &filter_method, &interlace_method);
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(())
     }
 }
 
@@ -127,31 +170,6 @@ trait Parse {
 //     rendering_intent: u8,
 // }
 
-// struct tEXt {
-//     keyword: String, // First 1-79 bytes
-//     // null_seperator: u8
-//     text_string: String,
-// }
-
-// struct zTXt {
-//     keyword: String, // First 1-79 bytes
-//     // null_seperator: u8,
-//     compression_method: u8,
-//     compressed_text_datastream: Vec<u8>,
-// }
-
-// struct iTXt {
-//     keyword: String, // First 1-79 bytes
-//     // null_seperator: u8,
-//     compression_flag: u8,
-//     compression_method: u8,
-//     language_tag: String,
-//     // null_seperator: u8,
-//     translated_keyword: String, // ?String?
-//     // null_seperator
-//     text: String,
-// }
-
 // struct bKGD {
 //     // Type 0
 //     greyscale: u16,
@@ -229,7 +247,7 @@ enum ChunkType {
 impl From<Cli> for Png {
     // Iterate over the whole file, emmiting PNG at end.
     fn from(cli: Cli) -> Png {
-        let path = match cli.file_path {
+        let path = match cli.file_path.clone() {
             Some(file_path) => file_path,
             None => {
                 panic!("Error, can't read path from CLI");
@@ -260,6 +278,7 @@ impl From<Cli> for Png {
         let mut png = Png {
             metadata: png_metadata,
             chunks: Vec::new(),
+            cli,
         };
 
         let mut chunk_type: [u8; 4] = [0; 4];
@@ -310,7 +329,7 @@ impl From<[u8; 4]> for ChunkType {
     // Identify & Parse the chunktype
     fn from(chunk_identifier: [u8; 4]) -> ChunkType {
         match chunk_identifier {
-            [73, 72, 68, 62] => ChunkType::IHDR,
+            [73, 72, 68, 82] => ChunkType::IHDR,
             [89, 76, 84, 69] => ChunkType::PLTE,
             [73, 68, 65, 84] => ChunkType::IDAT,
             [73, 69, 78, 68] => ChunkType::IEND,
