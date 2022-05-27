@@ -79,6 +79,32 @@ impl std::fmt::Display for Png {
                         write!(f, "IEND Chunk:\n (no data)").unwrap();
                     }
                 }
+                ChunkType::PLTE => {
+                    // Scheme: Index, Red, Green, Blue
+                    let mut pallet: Vec<(u8, u8, u8)> = Vec::new();
+
+                    for _ in chunk.chunk_data.iter() {
+                        let mut colors: [u8; 3] = [0, 0, 0];
+
+                        // Break once the Pallet Chunk ends
+                        match chunk.chunk_data.as_slice().read_exact(&mut colors) {
+                            Ok(..) => {}
+                            Err(..) => {
+                                break;
+                            }
+                        }
+
+                        pallet.push((colors[0], colors[1], colors[2]));
+                    }
+
+                    if self.cli.display_options.descriptive == Some(true) {
+                        write!(f, "PLTE Chunk:\n").unwrap();
+                        for (index, colors) in pallet.iter().enumerate() {
+                            write!(f, " {}: ", index).unwrap();
+                            write!(f, "{:?}\n", colors).unwrap();
+                        }
+                    }
+                }
                 _ => {
                     println!("{:?}", &chunk);
                 }
@@ -225,7 +251,7 @@ enum ChunkType {
     // Critical chunks
     // https://www.w3.org/TR/2003/REC-PNG-20031110/#11Critical-chunks
     IHDR, // 73, 72, 68, 62
-    PLTE, // 89, 76, 84, 69
+    PLTE, // 80, 76, 84, 69
     IDAT, // 73, 68, 65, 84
     IEND, // 73, 69, 78, 68
 
@@ -335,7 +361,7 @@ impl From<[u8; 4]> for ChunkType {
     fn from(chunk_identifier: [u8; 4]) -> ChunkType {
         match chunk_identifier {
             [73, 72, 68, 82] => ChunkType::IHDR,
-            [89, 76, 84, 69] => ChunkType::PLTE,
+            [80, 76, 84, 69] => ChunkType::PLTE,
             [73, 68, 65, 84] => ChunkType::IDAT,
             [73, 69, 78, 68] => ChunkType::IEND,
 
