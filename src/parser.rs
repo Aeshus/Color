@@ -105,6 +105,20 @@ impl std::fmt::Display for Png {
                         }
                     }
                 }
+                ChunkType::gAMA => {
+                    let mut image_gama: [u8; 4] = [0; 4];
+
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut image_gama)
+                        .unwrap();
+
+                    if self.cli.display_options.descriptive == Some(true) {
+                        write!(f, "gAMA Chunk:\n gama: {}", u32::from_be_bytes(image_gama))
+                            .unwrap();
+                    }
+                }
                 _ => {
                     println!("{:?}", &chunk);
                 }
