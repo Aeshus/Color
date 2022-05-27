@@ -34,10 +34,8 @@ impl std::fmt::Display for Png {
         let mut bit_depth: [u8; 1] = [0; 1];
 
         for chunk in &self.chunks {
-            println!("{:?}", chunk);
             match chunk.chunk_type {
                 ChunkType::IHDR => {
-                    println!("IHDR");
                     let mut width: [u8; 4] = [0; 4];
                     let mut height: [u8; 4] = [0; 4];
                     let mut compression_method: [u8; 1] = [0; 1];
@@ -73,10 +71,17 @@ impl std::fmt::Display for Png {
                         .unwrap();
 
                     if self.cli.display_options.descriptive == Some(true) {
-                        write!(f, "IHDR Chunk:\n width: {:?}\n height: {:?}\n compression method: {:?}\n filter_method {:?}\n interlace method: {:?}\n", &width, &height, &compression_method, &filter_method, &interlace_method);
+                        write!(f, "IHDR Chunk:\n width: {:?}\n height: {:?}\n compression method: {:?}\n filter_method {:?}\n interlace method: {:?}\n", &width, &height, &compression_method, &filter_method, &interlace_method).unwrap();
                     }
                 }
-                _ => {}
+                ChunkType::IEND => {
+                    if self.cli.display_options.descriptive == Some(true) {
+                        write!(f, "IEND Chunk:\n (no data)").unwrap();
+                    }
+                }
+                _ => {
+                    println!("{:?}", &chunk);
+                }
             }
         }
         Ok(())
