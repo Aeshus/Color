@@ -71,7 +71,8 @@ impl std::fmt::Display for Png {
                         .unwrap();
 
                     if self.cli.display_options.descriptive == Some(true) {
-                        write!(f, "IHDR Chunk:\n width: {:?}\n height: {:?}\n compression method: {:?}\n filter_method {:?}\n interlace method: {:?}\n", &width, &height, &compression_method, &filter_method, &interlace_method).unwrap();
+                        write!(f, "IHDR Chunk:\n width: {:?}\n height: {:?}\n compression method: {:?}\n filter_method {:?}\n interlace method: {:?}\n",
+                            u32::from_be_bytes(width), u32::from_be_bytes(height), u8::from_be_bytes(compression_method), u8::from_be_bytes(filter_method), u8::from_be_bytes(interlace_method)).unwrap();
                     }
                 }
                 ChunkType::IEND => {
@@ -129,8 +130,12 @@ impl std::fmt::Display for Png {
                         .unwrap();
 
                     if self.cli.display_options.descriptive == Some(true) {
-                        write!(f, "sRGB Chunk:\n rendering intent: {:?}", rendering_intent)
-                            .unwrap();
+                        write!(
+                            f,
+                            "sRGB Chunk:\n rendering intent: {:?}",
+                            u8::from_be_bytes(rendering_intent)
+                        )
+                        .unwrap();
                     }
                 }
                 _ => {
