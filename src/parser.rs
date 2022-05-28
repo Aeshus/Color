@@ -119,6 +119,20 @@ impl std::fmt::Display for Png {
                             .unwrap();
                     }
                 }
+                ChunkType::sRGB => {
+                    let mut rendering_intent: [u8; 1] = [0];
+
+                    chunk
+                        .chunk_data
+                        .as_slice()
+                        .read_exact(&mut rendering_intent)
+                        .unwrap();
+
+                    if self.cli.display_options.descriptive == Some(true) {
+                        write!(f, "sRGB Chunk:\n rendering intent: {:?}", rendering_intent)
+                            .unwrap();
+                    }
+                }
                 _ => {
                     println!("{:?}", &chunk);
                 }
