@@ -138,6 +138,28 @@ impl std::fmt::Display for Png {
                         .unwrap();
                     }
                 }
+                ChunkType::tIME => {
+                    let mut year: [u8; 2] = [0; 2];
+                    let mut month: [u8; 1] = [0; 1];
+                    let mut day: [u8; 1] = [0; 1];
+                    let mut hour: [u8; 1] = [0; 1];
+                    let mut minute: [u8; 1] = [0; 1];
+                    let mut second: [u8; 1] = [0; 1];
+                    chunk.chunk_data.as_slice().read_exact(&mut year).unwrap();
+                    chunk.chunk_data.as_slice().read_exact(&mut month).unwrap();
+                    chunk.chunk_data.as_slice().read_exact(&mut day).unwrap();
+                    chunk.chunk_data.as_slice().read_exact(&mut hour).unwrap();
+                    chunk.chunk_data.as_slice().read_exact(&mut minute).unwrap();
+                    chunk.chunk_data.as_slice().read_exact(&mut second).unwrap();
+
+                    if self.cli.display_options.descriptive == Some(true) {
+                        write!(f,
+                            "tIME Chunk:\n Year: {}\n Month: {}\n Day: {}\n Hour: {}\n Minute: {}\n Second: {}", 
+                            u16::from_be_bytes(year), u8::from_be_bytes(month), u8::from_be_bytes(day), u8::from_be_bytes(hour), u8::from_be_bytes(minute), u8::from_be_bytes(second)
+                        )
+                        .unwrap();
+                    }
+                }
                 _ => {
                     println!("{:?}", &chunk);
                 }
